@@ -30,6 +30,7 @@ def realistic_scenario():
         n_samples=4096,
         fs=1e6,
         snr_db=30,
+        signal_bandwidth_hz=100e3,  # 100 kHz bandwidth
         target_delay_s=50e-6,
         target_doppler_hz=100,
         transmit_power_w=1000,

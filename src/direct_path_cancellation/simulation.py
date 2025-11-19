@@ -3,21 +3,39 @@ This module provides functions for simulating signals for direct path cancellati
 """
 
 import numpy as np
+from scipy import signal
 
-def generate_signal(n_samples: int, seed: int = None) -> np.ndarray:
+def generate_signal(
+    n_samples: int, fs: float, bandwidth_hz: float, seed: int = None
+) -> np.ndarray:
     """
-    Generates a base random complex-valued signal.
+    Generates a base random complex-valued signal with a specific bandwidth.
 
     Args:
         n_samples: The number of samples to generate.
+        fs: The sampling frequency in Hz.
+        bandwidth_hz: The desired bandwidth of the signal in Hz.
         seed: An optional random seed for reproducibility.
 
     Returns:
-        The generated complex-valued signal.
+        The generated complex-valued, band-limited signal.
     """
     if seed is not None:
         np.random.seed(seed)
-    return np.random.randn(n_samples) + 1j * np.random.randn(n_samples)
+
+    # Create a random complex signal
+    base_signal = np.random.randn(n_samples) + 1j * np.random.randn(n_samples)
+
+    # Design a low-pass filter to create a band-limited signal
+    nyquist = fs / 2
+    cutoff = bandwidth_hz / 2
+    num_taps = 101 # A reasonable filter order
+    fir_filter = signal.firwin(num_taps, cutoff / nyquist)
+
+    # Apply the filter
+    filtered_signal = signal.lfilter(fir_filter, 1.0, base_signal)
+
+    return filtered_signal
 
 def apply_doppler_shift(signal: np.ndarray, fs: float, doppler_freq: float) -> np.ndarray:
     """
@@ -102,6 +120,7 @@ def simulate_scenario(
     n_samples: int,
     fs: float,
     snr_db: float,
+    signal_bandwidth_hz: float,
     target_delay_s: float,
     target_doppler_hz: float,
     transmit_power_w: float,
@@ -123,8 +142,8 @@ def simulate_scenario(
         np.random.seed(seed)
 
     # Generate clean source signals
-    direct_path_clean = generate_signal(n_samples)
-    target_source_clean = generate_signal(n_samples)
+    direct_path_clean = generate_signal(n_samples, fs, signal_bandwidth_hz)
+    target_source_clean = generate_signal(n_samples, fs, signal_bandwidth_hz)
 
     # Calculate target attenuation using the radar range equation
     attenuation_db = radar_range_equation_attenuation(

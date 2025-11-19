@@ -2,43 +2,50 @@
 A script to compare the performance of the Wiener and LMS filters.
 """
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import welch
 from direct_path_cancellation.simulation import simulate_scenario
 from direct_path_cancellation.filters import WienerFilter, LMSFilter
 
-def plot_results(original, wiener_cleaned, lms_cleaned, fs):
-    """Generates and saves plots of the signals."""
-    time = np.arange(len(original)) / fs * 1e6 # Time in microseconds
+def plot_results(original, wiener_cleaned, lms_cleaned, fs, wiener_db, lms_db):
+    """Generates and saves a spectral plot of the signals."""
+    nperseg = 1024
 
-    fig, axs = plt.subplots(3, 1, figsize=(12, 9), sharex=True, sharey=True)
+    # Calculate PSDs
+    freqs, psd_orig = welch(original, fs=fs, nperseg=nperseg)
+    _, psd_wiener = welch(wiener_cleaned, fs=fs, nperseg=nperseg)
+    _, psd_lms = welch(lms_cleaned, fs=fs, nperseg=nperseg)
 
-    # Original Signal
-    axs[0].plot(time, np.real(original), label="Real Part")
-    axs[0].plot(time, np.imag(original), label="Imaginary Part")
-    axs[0].set_title("Original Signal (Channel 2)")
-    axs[0].grid(True)
-    axs[0].legend()
+    # Plotting
+    plt.figure(figsize=(12, 7))
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_orig), label="Original Signal")
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_wiener), label="After Wiener Filter")
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_lms), label="After LMS Filter")
 
-    # Wiener Filter Output
-    axs[1].plot(time, np.real(wiener_cleaned), label="Real Part")
-    axs[1].plot(time, np.imag(wiener_cleaned), label="Imaginary Part")
-    axs[1].set_title("After Wiener Filter")
-    axs[1].grid(True)
-    axs[1].legend()
+    plt.title("Spectral Comparison of Cancellation Filters")
+    plt.xlabel("Frequency (MHz)")
+    plt.ylabel("Power Spectral Density (dB/Hz)")
+    plt.grid(True)
+    plt.legend()
+    plt.ylim(bottom=-140) # Show the noise floor
 
-    # LMS Filter Output
-    axs[2].plot(time, np.real(lms_cleaned), label="Real Part")
-    axs[2].plot(time, np.imag(lms_cleaned), label="Imaginary Part")
-    axs[2].set_title("After LMS Filter")
-    axs[2].grid(True)
-    axs[2].legend()
+    # Add text box with results
+    results_text = (
+        f"Cancellation:\n"
+        f"Wiener: {wiener_db:.2f} dB\n"
+        f"LMS:    {lms_db:.2f} dB"
+    )
+    plt.text(0.05, 0.95, results_text, transform=plt.gca().transAxes,
+             fontsize=12, verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
-    axs[2].set_xlabel("Time (us)")
-    fig.tight_layout()
+    # Auto-create plots directory
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
 
-    plt.savefig("plots/cancellation_comparison.png")
-    print("\nSaved plot to plots/cancellation_comparison.png")
+    plt.savefig("plots/spectral_comparison.png")
+    print("\nSaved plot to plots/spectral_comparison.png")
 
 def calculate_cancellation_db(original_signal: np.ndarray, cleaned_signal: np.ndarray) -> float:
     """Calculates the cancellation ratio in dB."""
@@ -51,11 +58,12 @@ def calculate_cancellation_db(original_signal: np.ndarray, cleaned_signal: np.nd
 def main():
     """Main function to run the comparison."""
     # --- Simulation Parameters ---
-    filter_length = 128
+    filter_length = 256
     lms_learning_rate = 0.5
     lms_epochs = 10
-    n_samples = 8192
-    fs = 1e6
+    n_samples = 16384
+    fs = 2e6  # 2 MHz sampling rate
+    signal_bandwidth_hz = 200e3  # 200 kHz signal bandwidth
     snr_db = 40
     target_delay_s = 100e-6
     target_doppler_hz = 200
@@ -63,7 +71,7 @@ def main():
     antenna_gain_db = 20
     radar_cross_section_m2 = 1
     frequency_hz = 10e9
-    target_range_m = 7000  # Further target for weaker signal
+    target_range_m = 7000
     seed = 123
 
     # --- Generate Data ---
@@ -72,6 +80,7 @@ def main():
         n_samples=n_samples,
         fs=fs,
         snr_db=snr_db,
+        signal_bandwidth_hz=signal_bandwidth_hz,
         target_delay_s=target_delay_s,
         target_doppler_hz=target_doppler_hz,
         transmit_power_w=transmit_power_w,
@@ -91,21 +100,16 @@ def main():
     # --- Run LMS Filter (Multi-Epoch) ---
     print(f"Running LMS filter for {lms_epochs} epochs...")
     lms_filter = LMSFilter(filter_length=filter_length, learning_rate=lms_learning_rate)
-    for epoch in range(lms_epochs):
-        # Always use the original channel data
+    for _ in range(lms_epochs):
         lms_cleaned = lms_filter(channel1, channel2)
-        print(f"  Epoch {epoch+1}/{lms_epochs} complete.")
-
     lms_cancellation = calculate_cancellation_db(channel2, lms_cleaned)
 
-    # --- Print Report ---
+    # --- Print Report & Generate Plots ---
     print("\n--- Filter Performance Comparison ---")
     print(f"Wiener Filter Cancellation: {wiener_cancellation:.2f} dB")
     print(f"LMS Filter Cancellation:    {lms_cancellation:.2f} dB")
     print("------------------------------------")
-
-    # --- Generate Plots ---
-    plot_results(channel2, wiener_cleaned, lms_cleaned, fs)
+    plot_results(channel2, wiener_cleaned, lms_cleaned, fs, wiener_cancellation, lms_cancellation)
 
 if __name__ == "__main__":
     main()
