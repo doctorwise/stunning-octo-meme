@@ -67,14 +67,14 @@ def main():
     n_samples = 32768 # More samples for better PSD
     fs = 10e6  # 10 MHz sampling rate
     signal_bandwidth_hz = 5e6  # 5 MHz signal bandwidth
-    snr_db = 40
+    snr_db = 85  # Increase SNR to make target visible
     target_delay_s = 100e-6
     target_doppler_hz = 200
     transmit_power_w = 1000
     antenna_gain_db = 20
     radar_cross_section_m2 = 1
     frequency_hz = 10e9
-    target_range_m = 7000
+    target_range_m = 1000  # Closer target for stronger signal
     seed = 123
 
     # --- Generate Data ---
