@@ -9,20 +9,23 @@ from scipy.signal import welch
 from direct_path_cancellation.simulation import simulate_scenario
 from direct_path_cancellation.filters import WienerFilter, LMSFilter
 
-def plot_results(original, wiener_cleaned, lms_cleaned, fs, wiener_db, lms_db):
+def plot_results(original, wiener_cleaned, lms_cleaned, target_clean, fs, wiener_db, lms_db):
     """Generates and saves a spectral plot of the signals."""
-    nperseg = 1024
+    nperseg = 2048
 
     # Calculate PSDs
     freqs, psd_orig = welch(original, fs=fs, nperseg=nperseg)
     _, psd_wiener = welch(wiener_cleaned, fs=fs, nperseg=nperseg)
     _, psd_lms = welch(lms_cleaned, fs=fs, nperseg=nperseg)
+    _, psd_target = welch(target_clean, fs=fs, nperseg=nperseg)
 
     # Plotting
     plt.figure(figsize=(12, 7))
-    plt.plot(freqs / 1e6, 10 * np.log10(psd_orig), label="Original Signal")
-    plt.plot(freqs / 1e6, 10 * np.log10(psd_wiener), label="After Wiener Filter")
-    plt.plot(freqs / 1e6, 10 * np.log10(psd_lms), label="After LMS Filter")
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_orig), label="Original Signal", alpha=0.7)
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_wiener), label="After Wiener Filter", alpha=0.7)
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_lms), label="After LMS Filter", alpha=0.7)
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_target), label="Target Signal (Ground Truth)",
+             color='black', linestyle='--', linewidth=2)
 
     plt.title("Spectral Comparison of Cancellation Filters")
     plt.xlabel("Frequency (MHz)")
@@ -61,9 +64,9 @@ def main():
     filter_length = 256
     lms_learning_rate = 0.5
     lms_epochs = 10
-    n_samples = 16384
-    fs = 2e6  # 2 MHz sampling rate
-    signal_bandwidth_hz = 200e3  # 200 kHz signal bandwidth
+    n_samples = 32768 # More samples for better PSD
+    fs = 10e6  # 10 MHz sampling rate
+    signal_bandwidth_hz = 5e6  # 5 MHz signal bandwidth
     snr_db = 40
     target_delay_s = 100e-6
     target_doppler_hz = 200
@@ -76,7 +79,7 @@ def main():
 
     # --- Generate Data ---
     print("Generating simulation data...")
-    channel1, channel2, _ = simulate_scenario(
+    channel1, channel2, target_signal_clean = simulate_scenario(
         n_samples=n_samples,
         fs=fs,
         snr_db=snr_db,
@@ -109,7 +112,7 @@ def main():
     print(f"Wiener Filter Cancellation: {wiener_cancellation:.2f} dB")
     print(f"LMS Filter Cancellation:    {lms_cancellation:.2f} dB")
     print("------------------------------------")
-    plot_results(channel2, wiener_cleaned, lms_cleaned, fs, wiener_cancellation, lms_cancellation)
+    plot_results(channel2, wiener_cleaned, lms_cleaned, target_signal_clean, fs, wiener_cancellation, lms_cancellation)
 
 if __name__ == "__main__":
     main()
