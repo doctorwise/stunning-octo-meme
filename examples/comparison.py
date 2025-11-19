@@ -50,6 +50,43 @@ def plot_results(original, wiener_cleaned, lms_cleaned, target_clean, fs, wiener
     plt.savefig("plots/spectral_comparison.png")
     print("\nSaved plot to plots/spectral_comparison.png")
 
+def plot_normalized_results(original, wiener_cleaned, lms_cleaned, target_clean, fs):
+    """Generates and saves a normalized spectral plot."""
+    nperseg = 2048
+
+    # Calculate PSDs
+    freqs, psd_orig = welch(original, fs=fs, nperseg=nperseg)
+    _, psd_wiener = welch(wiener_cleaned, fs=fs, nperseg=nperseg)
+    _, psd_lms = welch(lms_cleaned, fs=fs, nperseg=nperseg)
+    _, psd_target = welch(target_clean, fs=fs, nperseg=nperseg)
+
+    # Normalize PSDs
+    psd_orig_norm = psd_orig / np.max(psd_orig)
+    psd_wiener_norm = psd_wiener / np.max(psd_wiener)
+    psd_lms_norm = psd_lms / np.max(psd_lms)
+    psd_target_norm = psd_target / np.max(psd_target)
+
+    # Plotting
+    plt.figure(figsize=(12, 7))
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_wiener_norm), label="After Wiener Filter")
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_lms_norm), label="After LMS Filter")
+    plt.plot(freqs / 1e6, 10 * np.log10(psd_target_norm), label="Target Signal (Ground Truth)",
+             color='black', linestyle='--', linewidth=2)
+
+    plt.title("Normalized Spectral Shape Comparison")
+    plt.xlabel("Frequency (MHz)")
+    plt.ylabel("Normalized Power Spectral Density (dB)")
+    plt.grid(True)
+    plt.legend()
+    plt.ylim(bottom=-60) # Show shape down to -60 dB
+
+    # Auto-create plots directory
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+
+    plt.savefig("plots/normalized_spectral_comparison.png")
+    print("Saved normalized plot to plots/normalized_spectral_comparison.png")
+
 def calculate_cancellation_db(original_signal: np.ndarray, cleaned_signal: np.ndarray) -> float:
     """Calculates the cancellation ratio in dB."""
     power_before = np.mean(np.abs(original_signal)**2)
@@ -74,7 +111,7 @@ def main():
     antenna_gain_db = 20
     radar_cross_section_m2 = 1
     frequency_hz = 10e9
-    target_range_m = 1000  # Closer target for stronger signal
+    target_range_m = 500   # Even closer for a louder target
     seed = 123
 
     # --- Generate Data ---
@@ -113,6 +150,7 @@ def main():
     print(f"LMS Filter Cancellation:    {lms_cancellation:.2f} dB")
     print("------------------------------------")
     plot_results(channel2, wiener_cleaned, lms_cleaned, target_signal_clean, fs, wiener_cancellation, lms_cancellation)
+    plot_normalized_results(channel2, wiener_cleaned, lms_cleaned, target_signal_clean, fs)
 
 if __name__ == "__main__":
     main()
