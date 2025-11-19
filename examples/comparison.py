@@ -54,21 +54,32 @@ def main():
     filter_length = 128
     lms_learning_rate = 0.5
     lms_epochs = 10
+    n_samples = 8192
+    fs = 1e6
+    snr_db = 40
+    target_delay_s = 100e-6
+    target_doppler_hz = 200
+    transmit_power_w = 1000
+    antenna_gain_db = 20
+    radar_cross_section_m2 = 1
+    frequency_hz = 10e9
+    target_range_m = 7000  # Further target for weaker signal
+    seed = 123
 
     # --- Generate Data ---
     print("Generating simulation data...")
     channel1, channel2, _ = simulate_scenario(
-        n_samples=8192,
-        fs=1e6,
-        snr_db=40,
-        target_delay_s=100e-6,
-        target_doppler_hz=200,
-        transmit_power_w=1000,
-        antenna_gain_db=20,
-        radar_cross_section_m2=1,
-        frequency_hz=10e9,
-        target_range_m=7000, # Further target for weaker signal
-        seed=123,
+        n_samples=n_samples,
+        fs=fs,
+        snr_db=snr_db,
+        target_delay_s=target_delay_s,
+        target_doppler_hz=target_doppler_hz,
+        transmit_power_w=transmit_power_w,
+        antenna_gain_db=antenna_gain_db,
+        radar_cross_section_m2=radar_cross_section_m2,
+        frequency_hz=frequency_hz,
+        target_range_m=target_range_m,
+        seed=seed,
     )
 
     # --- Run Wiener Filter ---
