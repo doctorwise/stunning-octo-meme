@@ -3,8 +3,42 @@ A script to compare the performance of the Wiener and LMS filters.
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 from direct_path_cancellation.simulation import simulate_scenario
 from direct_path_cancellation.filters import WienerFilter, LMSFilter
+
+def plot_results(original, wiener_cleaned, lms_cleaned, fs):
+    """Generates and saves plots of the signals."""
+    time = np.arange(len(original)) / fs * 1e6 # Time in microseconds
+
+    fig, axs = plt.subplots(3, 1, figsize=(12, 9), sharex=True, sharey=True)
+
+    # Original Signal
+    axs[0].plot(time, np.real(original), label="Real Part")
+    axs[0].plot(time, np.imag(original), label="Imaginary Part")
+    axs[0].set_title("Original Signal (Channel 2)")
+    axs[0].grid(True)
+    axs[0].legend()
+
+    # Wiener Filter Output
+    axs[1].plot(time, np.real(wiener_cleaned), label="Real Part")
+    axs[1].plot(time, np.imag(wiener_cleaned), label="Imaginary Part")
+    axs[1].set_title("After Wiener Filter")
+    axs[1].grid(True)
+    axs[1].legend()
+
+    # LMS Filter Output
+    axs[2].plot(time, np.real(lms_cleaned), label="Real Part")
+    axs[2].plot(time, np.imag(lms_cleaned), label="Imaginary Part")
+    axs[2].set_title("After LMS Filter")
+    axs[2].grid(True)
+    axs[2].legend()
+
+    axs[2].set_xlabel("Time (us)")
+    fig.tight_layout()
+
+    plt.savefig("plots/cancellation_comparison.png")
+    print("\nSaved plot to plots/cancellation_comparison.png")
 
 def calculate_cancellation_db(original_signal: np.ndarray, cleaned_signal: np.ndarray) -> float:
     """Calculates the cancellation ratio in dB."""
@@ -58,6 +92,9 @@ def main():
     print(f"Wiener Filter Cancellation: {wiener_cancellation:.2f} dB")
     print(f"LMS Filter Cancellation:    {lms_cancellation:.2f} dB")
     print("------------------------------------")
+
+    # --- Generate Plots ---
+    plot_results(channel2, wiener_cleaned, lms_cleaned, fs)
 
 if __name__ == "__main__":
     main()

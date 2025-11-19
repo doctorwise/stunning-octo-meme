@@ -12,3 +12,10 @@ env/
 # Data
 *.csv
 *.dat
+
+# Plots
+plots/
+*.png
+*.svg
+*.jpg
+*.jpeg

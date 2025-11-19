@@ -9,6 +9,7 @@ dependencies = [
     "numpy",
     "scipy",
     "pytest",
+    "matplotlib",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
