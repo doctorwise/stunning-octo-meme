@@ -1,0 +1,20 @@
+[project]
+name = "direct-path-cancellation"
+version = "0.1.0"
+description = "A library for direct path signal cancellation in signal processing applications."
+authors = [
+    {name = "Jules", email = "jules@example.com"},
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pytest",
+    "matplotlib",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.venv
+venv/
+env/
+
+# Data
+*.csv
+*.dat
+
+# Plots
+plots/
+*.png
+*.svg
+*.jpg
+*.jpeg
